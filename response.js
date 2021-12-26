@@ -25,14 +25,14 @@ var charsetRegExp = /;\s*charset\s*=/;
 const kResponse = Symbol('response')
 const { Macroable } = require('@ostro/support/macro')
 const HttpResponseContract = require('@ostro/contracts/http/response')
-class HttpResponse extends Macroable.extend(HttpResponseContract){
+class HttpResponse extends Macroable.extend(HttpResponseContract) {
 
-    constructor(res){
+    constructor(res) {
         super()
-        Object.defineProperty(this,kResponse,{value:res})
+        Object.defineProperty(this, kResponse, { value: res })
     }
 
-    response(){
+    response() {
         return this[kResponse]
     }
 
@@ -112,7 +112,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
             var buf = !Buffer.isBuffer(body) ?
                 Buffer.from(body, encoding) :
                 body
-            this.header('ETag', etag(buf,{weak: true}));
+            this.header('ETag', etag(buf, { weak: true }));
         }
 
         if (this.fresh) this.statusCode = 304;
@@ -125,8 +125,8 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
         }
 
         if (this.method === 'HEAD') {
-
             this.end();
+
         } else {
 
             this.end(chunk, encoding);
@@ -147,11 +147,11 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
         return this.send(body, status);
     }
 
-    jsonp(obj, status = 200, callback = 'callback') {
-        var val = obj;
-        this.statusCode = status
-        var body = stringify(val, null, 2, null)
-        var callback = this.req.query[callback];
+    jsonp(obj, ...rest) {
+        rest = Array.from(rest)
+        var callback = rest.find(arg => typeof arg == 'string');
+        this.statusCode = rest.find(arg => typeof arg == 'number') || 200;
+        var body = stringify(obj, null, 2, null)
         if (!this.header('Content-Type', )) {
             this.header('X-Content-Type-Options', 'nosniff');
             this.header('Content-Type', 'application/json');
@@ -216,34 +216,30 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
 
     }
 
-    download(path, filename, options, callback) {
-        var done = callback;
-        var name = filename;
-        var opts = options || null
-        if (typeof filename === 'function') {
-            done = filename;
-            name = null;
-            opts = null
-        } else if (typeof options === 'function') {
-            done = options
-            opts = null
-        }
+    download(path, ...rest) {
+        rest = Array.from(rest)
+        let filename = rest.find(arg => typeof arg == 'string')
+        let callback = rest.find(arg => typeof arg == 'function')
+        let options = rest.find(arg => typeof arg == 'object') || {}
+
         var headers = {
-            'Content-Disposition': contentDisposition(name || path)
+            'Content-Disposition': contentDisposition(filename || path)
         };
-        if (opts && opts.headers) {
-            var keys = Object.keys(opts.headers)
+
+        if (options && options.headers) {
+            var keys = Object.keys(options.headers)
             for (var i = 0; i < keys.length; i++) {
                 var key = keys[i]
                 if (key.toLowerCase() !== 'content-disposition') {
-                    headers[key] = opts.headers[key]
+                    headers[key] = options.headers[key]
                 }
             }
         }
-        opts = Object.create(opts)
-        opts.headers = headers
+
+        options = Object.create(options)
+        options.headers = headers
         var fullPath = resolve(path);
-        return this.sendFile(fullPath, opts, done)
+        return this.sendFile(fullPath, options, callback)
     }
 
     contentType(type) {
@@ -395,7 +391,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
         return this.redirect('back')
     }
 
-    continue() {
+    continue () {
         return this.send(null, 100);
     }
 
@@ -420,11 +416,11 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
     }
 
     noContent() {
-        return this.send(null,204);
+        return this.send(null, 204);
     }
 
     resetContent() {
-        return this.send(null,205);
+        return this.send(null, 205);
     }
 
     partialContent(body) {
@@ -579,13 +575,13 @@ class HttpResponse extends Macroable.extend(HttpResponseContract){
         };
     }
 
-    __get(target,key){
-        return this.make(target[kResponse],key)
+    __get(target, key) {
+        return this.make(target[kResponse], key)
     }
-    __set(target,key,value){
-        if(key in target[kResponse]){
+    __set(target, key, value) {
+        if (key in target[kResponse]) {
             return target[kResponse][key] = value
-        }else{
+        } else {
             return target[key] = value
         }
     }

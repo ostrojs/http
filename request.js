@@ -10,6 +10,8 @@ const { compileTrust } = require('./utils')
 const kRequest = Symbol('request')
 const { Macroable } = require('@ostro/support/macro')
 const HttpRequestContract = require('@ostro/contracts/http/request')
+let booleanValue = [1, "1", true, "true", "on", "yes"]
+
 class HttpRequest extends Macroable.extend(HttpRequestContract) {
     constructor(req) {
         super()
@@ -19,14 +21,13 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
         this.httpVersion = req.httpVersion;
         this.complete = req.complete;
         this.headers = req.headers;
-        this.rawHeaders = req.rawHeaders;
         this.trailers = req.trailers;
-        this.rawTrailers = req.rawTrailers;
         this.aborted = req.aborted;
         this.upgrade = req.upgrade;
         this.url = req.url;
         this.statusCode = req.statusCode;
         this.statusMessage = req.statusMessage;
+        this.files = {};
     }
 
     get(name) {
@@ -50,6 +51,10 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
             default:
                 return this.headers[lc] || defaultValue;
         }
+    }
+
+    hasHeader(key) {
+        return typeof this.get(key) != 'undefined'
     }
 
     absolute() {
@@ -76,6 +81,14 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
         return accept.languages.apply(accept, arguments);
     }
 
+    prefers() {
+        return this.is(...arguments)
+    }
+
+    getAcceptableContentTypes() {
+        return this.accepts(...arguments)
+    }
+
     range(size, options) {
         var range = this.get('Range');
         if (!range) return;
@@ -89,6 +102,7 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
         return defaultValue;
     }
 
+
     is(types) {
         var arr = types;
         if (!Array.isArray(types)) {
@@ -99,7 +113,7 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
         }
         return typeis(this, arr);
     }
-    
+
     protocol() {
         var proto = this.connection.encrypted ?
             'https' :
@@ -130,7 +144,7 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
     }
 
     subdomains() {
-        var hostname = this.hostname;
+        var hostname = this.hostname();
 
         if (!hostname) return [];
 
@@ -138,6 +152,10 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
             hostname.split('.').reverse() : [hostname];
 
         return subdomains.slice(2);
+    }
+
+    request() {
+        return this[kRequest]
     }
 
     path() {
@@ -195,6 +213,23 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
         return (this.all()[key] || value) || null
     }
 
+    boolean(key) {
+        return Boolean(booleanValue.includes(this.input(key)))
+    }
+
+    hasAny(keys = []) {
+        let allInputsKeys = Object.keys(this.all())
+        return Boolean(keys.filter(value => allInputsKeys.includes(value)).length)
+    }
+
+    filled(key) {
+        return !!this.input(key)
+    }
+
+    missing(key) {
+        return !(key in this.all())
+    }
+
     getQuery(key, value) {
         return key ? (this.query[key] || value) : this.query
     }
@@ -208,16 +243,17 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
     }
 
     only() {
+        let inputKeys = Object.keys(this.all())
+        inputKeys = Array.from(arguments).filter(value => inputKeys.includes(value))
         let data = {}
-        for (var i = 0; i < arguments.length; i++) {
-            data[arguments[i]] = this.all()[arguments[i]]
+        for (var i = 0; i < inputKeys.length; i++) {
+            data[inputKeys[i]] = this[inputKeys[i]]
         }
         return data
     }
 
     except() {
-        let data = { ...this.all()
-        }
+        let data = { ...this.all() }
         for (var i = 0; i <= arguments.length; i++) {
             delete data[arguments[i]]
         }
@@ -225,7 +261,27 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
     }
 
     has(key) {
-        return Boolean(this.all()[key])
+        key = !Array.isArray(key) ? [key] : key
+        return this.hasAny(key)
+    }
+
+    whenHas(key, done = () => {}, error = () => {}) {
+        if (this.has(key)) {
+            done(this.input(key))
+        } else {
+            error()
+        }
+    }
+
+    whenFilled(key, done = () => {}, error = () => {}) {
+        let input = this.input(key)
+        if (input) {
+            done(input)
+
+        } else {
+            error()
+
+        }
     }
 
     file(key) {
@@ -247,8 +303,17 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
     wantJson() {
         return (this.headers.accept || '').toLowerCase() == 'application/json'
     }
+
     expectsJson() {
         return this.wantJson()
+    }
+
+    fullUrl() {
+        return this.hostname() + this.url.split('?')[0]
+    }
+
+    fullUrlWithQuery() {
+        return this.hostname() + this.url
     }
 
     fullUrlIs(except) {
@@ -283,6 +348,10 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
     }
 
     __get(target, key) {
+        if (target.has(key))
+            return target.input(key)
+        else if (target.files[key])
+            return this.files[key]
         return this.make(target[kRequest], key)
     }
 
