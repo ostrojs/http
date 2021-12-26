@@ -4,67 +4,102 @@ const kUrl = Symbol('url')
 const kErrors = Symbol('errors')
 const kInputs = Symbol('inputs')
 const kFlash = Symbol('flash')
+const kResponse = Symbol('response')
 
-class RedirectResponse extends Macroable.extend(RedirectResponseContract) {
+class RedirectResponse extends RedirectResponseContract {
 
-    [kUrl];
-
-    [kInputs];
-
-    [kErrors];
-
-    [kFlash];
-    
     constructor(response) {
         super()
-        Object.defineProperty(this, 'response', { value: response })
+        Object.defineProperties(this, {
+            [kUrl]: {
+                value: undefined,
+                writable: true
+            },
+            [kResponse]: {
+                value: response
+            },
+            [kInputs]: {
+                value: [],
+                writable: true,
+            },
+            [kErrors]: {
+                value: [],
+                writable: true
+            },
+            [kFlash]: {
+                value: [],
+                writable: true
+            }
+        })
     }
+
     to(url) {
         this[kUrl] = url
-        if (this.response) {
-            if (this.response.req.session)
-                this.response.with(this.getFlash()).withErrors(this.getErrors()).withInput(this.wantedInput());
-            this.response.redirect(url);
+        if (this[kResponse]) {
+            process.nextTick(() => {
+                if (this[kResponse].req.session)
+                    this[kResponse].with(...this.getFlash()).withErrors(...this.getErrors()).withInput(...this.getInputs());
+                this[kResponse].redirect(this[kUrl]);
+            })
         }
+        return this
     }
+
+    away(url) {
+        this[kResponse].redirect(url);
+    }
+
     route() {
         this[kUrl] = app('router').route(...arguments)
-        this.to(this[kUrl])
+        return this.to(this[kUrl])
     }
-    withErrors(errors) {
-        this[kErrors] = errors
+
+    withErrors() {
+        this[kErrors] = arguments
         return this
     }
-    withInput(inputs) {
-        this[kInputs] = true
+
+    withInput() {
+        this[kInputs] = arguments.length ? arguments : [true]
         return this
     }
-    with(flash) {
-        this[kFlash] = flash
+
+    with() {
+        this[kFlash] = arguments
         return this
     }
+
     getUrl() {
         return this[kUrl]
     }
+
     getErrors() {
         return this[kErrors]
     }
-    wantedInput() {
-        return this[kInputs] == true
+
+    getInputs() {
+        return this[kInputs]
     }
+
+    wantedInput() {
+        return this[kInputs].length
+    }
+
     getFlash() {
         return this[kFlash]
     }
+
     back() {
         this[kUrl] = 'back'
-        if (this.response) {
-            this.to(this[kUrl])
+        if (this[kResponse]) {
+            return this.to(this[kUrl])
         }
     }
-    static __call(target, method, args) {
-        return (new target)[method](...args)
+
+    static __get(target, method) {
+        return this.make(new target, method)
     }
 
 }
 
-module.exports = RedirectResponse
+module.exports = Macroable(RedirectResponse)

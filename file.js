@@ -31,26 +31,41 @@ class File extends FileContract {
             }
         });
     }
+
     getName() {
         return this.filename
     }
+
     getHashname() {
         return uuidv4().replace(/-/g, '') + '.' + this.getExtension();
     }
+
     getSize() {
         return Number((this.buffer.length / 1024).toFixed(2))
     }
+
     getMimetype() {
         return this.mimetype
     }
+
     getBufferData() {
         return this.buffer
     }
+
     getExtension() {
         return path.extname(this.filename).slice(1)
     }
+
     getType() {
         return 'buffer'
+    }
+
+    extension() {
+        return this.getExtension()
+    }
+
+    isValid() {
+        return true
     }
 
 }
