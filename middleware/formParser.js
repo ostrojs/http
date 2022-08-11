@@ -12,6 +12,9 @@ function customizer(objValue, srcValue) {
 
 class FormParser {
     handle({ request, response, next }) {
+        if (typeof request.files != 'object') {
+            request.files = {};
+        }
         if (!request.headers['content-type']) {
             next()
         } else if (request.headers['content-type'].includes('multipart/form-data')) {
