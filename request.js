@@ -158,6 +158,14 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) {
         return this[kRequest]
     }
 
+    segment(num) {
+        return this.segments()[num]
+    }
+
+    segments() {
+        return this.path().substr(1).split('/')
+    }
+
     path() {
         return parse(this).pathname;
     }
