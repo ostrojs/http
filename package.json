@@ -6,7 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@ostro/contracts": "^1.0.2",
+    "@ostro/contracts": "^1.0.3",
     "accepts": "^1.3.7",
     "array-flatten": "^3.0.0",
     "body-parser": "^1.20.2",
