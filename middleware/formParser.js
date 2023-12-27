@@ -33,7 +33,7 @@ class FormParser {
                             if (type === 'value') {
                                 return new File({
                                     filename: info.filename,
-                                    mimetype: info.mimetype,
+                                    mimetype: info.mimeType,
                                     encoding: info.encoding,
                                     buffer: datas
                                 })
