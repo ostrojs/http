@@ -16,7 +16,6 @@ const {
     resolve
 } = require('path');
 const statuses = require('statuses')
-const merge = require('utils-merge');
 const send = require('send');
 const mime = send.mime;
 const vary = require('vary');
@@ -39,7 +38,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
     links(links) {
         var link = this.header('Link') || '';
         if (link) link += ', ';
-        return this.header('Link', link + Object.keys(links).map(function(rel) {
+        return this.header('Link', link + Object.keys(links).map(function (rel) {
             return '<' + links[rel] + '>; rel="' + rel + '"';
         }).join(', '));
     }
@@ -152,7 +151,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
         var callback = rest.find(arg => typeof arg == 'string');
         this.statusCode = rest.find(arg => typeof arg == 'number') || 200;
         var body = stringify(obj, null, 2, null)
-        if (!this.header('Content-Type', )) {
+        if (!this.header('Content-Type',)) {
             this.header('X-Content-Type-Options', 'nosniff');
             this.header('Content-Type', 'application/json');
         }
@@ -184,7 +183,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
 
     sendFile(path, options, callback) {
         var done = callback;
-        var req = this.req;
+        var req = this.request;
         var res = this;
         var next = req.next;
         var opts = options || {};
@@ -206,7 +205,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
         }
         var pathname = encodeURI(path);
         var file = send(req, pathname, opts);
-        sendfile(res, file, opts, function(err) {
+        sendfile(res, file, opts, function (err) {
             if (done) return done(err);
             if (err && err.code === 'EISDIR') return next();
             if (err && err.code !== 'ECONNABORTED' && err.syscall !== 'write') {
@@ -255,7 +254,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
     }
 
     format(obj) {
-        var req = this.req;
+        var req = this.request;
         var next = req.next;
 
         var fn = obj.default;
@@ -276,7 +275,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
         } else {
             var err = new Error('Not Acceptable');
             err.status = err.statusCode = 406;
-            err.types = normalizeTypes(keys).map(function(o) {
+            err.types = normalizeTypes(keys).map(function (o) {
                 return o.value
             });
             next(err);
@@ -336,7 +335,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
     location(url) {
         var loc = url;
         if (url === 'back') {
-            loc = this.req.get('Referrer') || '/';
+            loc = this.request.get('Referrer') || '/';
         }
         return this.header('Location', encodeUrl(loc));
     }
@@ -360,23 +359,23 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
         var status = 302;
         address = this.location(address).get('Location');
         this.format({
-            text: function() {
+            text: function () {
                 body = statuses[status] + '. Redirecting to ' + address
             },
 
-            html: function() {
+            html: function () {
                 var u = escapeHtml(address);
                 body = '<p>' + statuses[status] + '. Redirecting to <a href="' + u + '">' + u + '</a></p>'
             },
 
-            default: function() {
+            default: function () {
                 body = '';
             }
         });
         this.statusCode = status;
         this.header('Content-Length', Buffer.byteLength(body));
 
-        if (this.req.method === 'HEAD') {
+        if (this.request.method === 'HEAD') {
             this.end();
         } else {
             this.end(body);
@@ -391,7 +390,7 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) {
         return this.redirect('back')
     }
 
-    continue () {
+    continue() {
         return this.send(null, 100);
     }
 

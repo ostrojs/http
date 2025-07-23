@@ -37,7 +37,7 @@ class RedirectResponse extends RedirectResponseContract {
         this[kUrl] = url
         if (this[kResponse]) {
             process.nextTick(() => {
-                if (this[kResponse].req.session)
+                if (this[kResponse].request.session)
                     this[kResponse].with(...this.getFlash()).withErrors(...this.getErrors()).withInput(...this.getInputs());
                 this[kResponse].redirect(this[kUrl]);
             })
