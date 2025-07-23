@@ -1,6 +1,6 @@
 const FileContract = require('@ostro/contracts/container/file')
 const { v4: uuidv4 } = require('uuid');
-
+const path = require('path');
 class File extends FileContract {
     constructor(data) {
         super()

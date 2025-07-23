@@ -1,4 +1,4 @@
-const File = require('@ostro/http/file')
+const File = require('../file')
 const lodash = require('lodash')
 const qs = require('qs')
 const Busboy = require('busboy')
@@ -18,10 +18,10 @@ class FormParser {
         if (!request.headers['content-type']) {
             next()
         } else if (request.headers['content-type'].includes('multipart/form-data')) {
-            let busboy = new Busboy({
+            let busboy = Busboy({
                 headers: request.headers
             });
-            busboy.on('file', function(fieldname, fileReader, filename, encoding, mimetype) {
+            busboy.on('file', function(fieldname, fileReader, info) {
                 let datas = []
                 fileReader.on('data', function(data) {
                     datas.push(data)
@@ -32,9 +32,9 @@ class FormParser {
                         decoder: function(str, defaultEncoder, charset, type) {
                             if (type === 'value') {
                                 return new File({
-                                    filename: filename,
-                                    mimetype: mimetype,
-                                    encoding: encoding,
+                                    filename: info.filename,
+                                    mimetype: info.mimeType,
+                                    encoding: info.encoding,
                                     buffer: datas
                                 })
 
