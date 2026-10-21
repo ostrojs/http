@@ -1,35 +1,55 @@
-const proxyaddr = require('proxy-addr');
-const Buffer = require('safe-buffer').Buffer
-const contentType = require('content-type');
-const { mime } = require('send');
+import proxyaddr from 'proxy-addr';
+import { Buffer } from 'safe-buffer';
+import contentType from 'content-type';
+import { mime } from 'send';
+import onFinished from 'on-finished';
 
-const env = process.env.NODE_ENV || 'local'
-const onFinished = require('on-finished');
-
-exports.isAbsolute = function(path) {
+export function isAbsolute(path: any) {
     if ('/' === path[0]) return true;
     if (':' === path[1] && ('\\' === path[2] || '/' === path[2])) return true;
     if ('\\\\' === path.substring(0, 2)) return true;
 };
 
-exports.normalizeType = function(type) {
+/**
+ * acceptParams handler.
+ * @param {*} str
+ * @param {*} index
+ * @returns {any}
+ */
+export function acceptParams(str: any, index?: any) {
+    var parts = str.split(/ *; */);
+    var ret = { value: parts[0], quality: 1, params: {}, originalIndex: index };
+    for (var i = 1; i < parts.length; ++i) {
+        var pms = parts[i].split(/ *= */);
+        if ('q' === pms[0]) {
+            ret.quality = parseFloat(pms[1]);
+        } else {
+            ret.params[pms[0]] = pms[1];
+        }
+    }
+    return ret;
+}
+
+
+
+export function normalizeType(type: any) {
     return ~type.indexOf('/') ?
         acceptParams(type) : {
             value: mime.lookup(type),
             params: {}
         };
 };
-exports.normalizeTypes = function(types) {
+export function normalizeTypes(types: any) {
     var ret = [];
 
     for (var i = 0; i < types.length; ++i) {
-        ret.push(exports.normalizeType(types[i]));
+        ret.push(normalizeType(types[i]));
     }
 
     return ret;
 };
 
-exports.setCharset = function setCharset(type, charset) {
+export function setCharset(type: any, charset: any) {
     if (!type || !charset) {
         return type;
     }
@@ -39,7 +59,7 @@ exports.setCharset = function setCharset(type, charset) {
 };
 
 
-exports.compileTrust = function(val) {
+export function compileTrust(val: any) {
     if (typeof val === 'function') return val;
 
     if (val === true) {
@@ -61,72 +81,95 @@ exports.compileTrust = function(val) {
     return proxyaddr.compile(val || []);
 }
 
-exports.stringify = function stringify(value, replacer, spaces, escape) {
+export function stringify(value: any, replacer?: any, spaces?: any, escape?: any) {
     var json = replacer || spaces ?
         JSON.stringify(value, replacer, spaces) :
         JSON.stringify(value);
 
     if (escape) {
+        var escapeChars = { '<': '\\u003c', '>': '\\u003e', '&': '\\u0026' };
         json = json.replace(/[<>&]/g, function(c) {
-            switch (c.charCodeAt(0)) {
-                case 0x3c:
-                    return '\\u003c'
-                case 0x3e:
-                    return '\\u003e'
-                case 0x26:
-                    return '\\u0026'
-                default:
-                    return c
-            }
+            return escapeChars[c];
         })
     }
 
     return json
 }
 
-exports.sendfile = function sendfile(res, file, options, callback) {
+export function sendfile(res: any, file: any, options: any, callback: any) {
     var done = false;
     var streaming;
 
+    /**
+     * onaborted handler.
+     * @returns {any}
+     */
     function onaborted() {
         if (done) return;
         done = true;
 
-        var err = new Error('Request aborted');
+        var err: any = new Error('Request aborted');
         err.code = 'ECONNABORTED';
         callback(err);
     }
 
+    /**
+     * ondirectory handler.
+     * @returns {any}
+     */
     function ondirectory() {
         if (done) return;
         done = true;
 
-        var err = new Error('EISDIR, read');
+        var err: any = new Error('EISDIR, read');
         err.code = 'EISDIR';
         callback(err);
     }
 
+    /**
+     * onerror handler.
+     * @param {*} err
+     * @returns {any}
+     */
     function onerror(err) {
         if (done) return;
         done = true;
         callback(err);
     }
 
+    /**
+     * onend handler.
+     * @returns {any}
+     */
     function onend() {
         if (done) return;
         done = true;
         callback();
     }
 
+    /**
+     * onfile handler.
+     * @returns {any}
+     */
     function onfile() {
         streaming = false;
     }
 
+    /**
+     * onfinish handler.
+     * @param {*} err
+     * @returns {any}
+     */
     function onfinish(err) {
         if (err && err.code === 'ECONNRESET') return onaborted();
         if (err) return onerror(err);
         if (done) return;
 
+        /**
+         * setImmediate method.
+         * @param {*} function(
+         * @returns {any}
+         */
         setImmediate(function() {
             if (streaming !== false && !done) {
                 onaborted();
@@ -139,6 +182,10 @@ exports.sendfile = function sendfile(res, file, options, callback) {
         });
     }
 
+    /**
+     * onstream handler.
+     * @returns {any}
+     */
     function onstream() {
         streaming = true;
     }
@@ -164,3 +211,5 @@ exports.sendfile = function sendfile(res, file, options, callback) {
 
     file.pipe(res);
 }
+const utils = { isAbsolute, acceptParams, normalizeType, normalizeTypes, setCharset, compileTrust, stringify, sendfile };
+export default utils;
