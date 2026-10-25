@@ -16,7 +16,7 @@ class ServeStatic {
      * Create a new instance.
      */
     constructor() {
-        this.$publicPath = this.$app ? this.$app['path.public'] : (typeof (global as any).$app !== 'undefined' ? (global as any).$app['path.public'] : '');
+        this.$publicPath = this.$app ? this.$app['path.public'] : ((global as typeof globalThis).$app ? (global as typeof globalThis).$app['path.public'] : '');
     }
 
     /**

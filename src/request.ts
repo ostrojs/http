@@ -1,7 +1,8 @@
+import type { IncomingMessage } from 'node:http';
 import type { IHttpRequest } from '@ostro/contracts/http/request';
 
 import accepts from 'accepts';
-import { isIP } from 'net';
+import { isIP } from 'node:net';
 import { pathToRegexp } from 'path-to-regexp';
 import typeis from 'type-is';
 import fresh from 'fresh';
@@ -20,6 +21,13 @@ let booleanValue = [1, "1", true, "true", "on", "yes"];
 class HttpRequest extends Macroable.extend(HttpRequestContract) implements IHttpRequest {
     [kRequest]: any;
     [key: string]: any;
+
+    /**
+     * Get underlying native HTTP request.
+     */
+    public get req(): IncomingMessage {
+        return this[kRequest];
+    }
 
     /**
      * Create a new instance.
@@ -250,10 +258,10 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) implements IHttp
 
     /**
      * request method.
-     * @returns {any}
+     * @returns {IncomingMessage}
      */
-    public request() {
-        return this[kRequest]
+    public request(): IncomingMessage {
+        return this[kRequest];
     }
 
     /**
@@ -605,10 +613,10 @@ class HttpRequest extends Macroable.extend(HttpRequestContract) implements IHttp
      * @param {*} key
      * @returns {any}
      */
-    public __get(target: Record<string, any>, key: string) {
+    public __get(target: HttpRequest, key: string) {
         if (target.has(key))
             return target.input(key)
-        return (this as any).make((target as any)[kRequest], key)
+        return this.make(target[kRequest], key);
     }
 
 }

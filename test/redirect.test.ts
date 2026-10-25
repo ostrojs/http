@@ -1,3 +1,4 @@
+import { describe, test, expect } from "@jest/globals";
 const _Redirect = require('../src/redirect');
 const Redirect = _Redirect.default || _Redirect;
 const _RedirectResponse = require('../src/redirectResponse');

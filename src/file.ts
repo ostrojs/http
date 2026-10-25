@@ -1,6 +1,6 @@
 import FileContract from '@ostro/contracts/container/file';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
+import path from 'node:path';
 
 /**
  * Class File representing an uploaded file buffer and its metadata.

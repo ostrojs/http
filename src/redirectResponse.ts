@@ -1,5 +1,5 @@
 import RedirectResponseContract from '@ostro/contracts/http/redirectResponse';
-import { Macroable } from '@ostro/support/macro';
+import { Macroable, ProxyHandler } from '@ostro/support/macro';
 const kUrl = Symbol('url')
 const kErrors = Symbol('errors')
 const kInputs = Symbol('inputs')
@@ -71,8 +71,8 @@ class RedirectResponse extends RedirectResponseContract {
      * @returns {any}
      */
     public route(...args: any[]) {
-        this[kUrl] = (global as any).app('router').route(...args)
-        return this.to(this[kUrl])
+        this[kUrl] = (global as typeof globalThis).app('router').route(...args);
+        return this.to(this[kUrl]);
     }
 
     /**
@@ -164,7 +164,7 @@ class RedirectResponse extends RedirectResponseContract {
      * @returns {any}
      */
     static __get(target: any, method: string) {
-        return (this as any).make(new target, method)
+        return ProxyHandler.make(new target, method);
     }
 
 }

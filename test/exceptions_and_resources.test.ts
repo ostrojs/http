@@ -1,3 +1,4 @@
+import { describe, test, expect } from "@jest/globals";
 const _URL = require('../src/url');
 const URL = _URL.default || _URL;
 const _File = require('../src/file');

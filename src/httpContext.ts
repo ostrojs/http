@@ -1,6 +1,5 @@
 import { Macroable } from '@ostro/support/macro';
-const kNext = Symbol('next')
-import url from 'url';
+import url from 'node:url';
 import URL from './url';
 import RedirectResponse from './redirectResponse';
 
@@ -8,13 +7,15 @@ import RedirectResponse from './redirectResponse';
  * Class HttpContext.
  */
 class HttpContext extends Macroable {
+    #next: Function | null = null;
+
     /**
      * Create a new instance.
      * @param {*} request
      * @param {*} response
      * @param {*} next
      */
-    constructor(request: any, response: any, next: Function) {
+    constructor(request: any, response: any, next?: Function) {
         super()
         Object.defineProperty(this, 'request', {
             value: request,
@@ -31,7 +32,9 @@ class HttpContext extends Macroable {
         if (typeof request._parsedUrl != 'object') {
             request._parsedUrl = url.parse(request.url, false)
         }
-
+        if (typeof next === 'function') {
+            this.#next = next;
+        }
     }
 
     /**
@@ -40,7 +43,7 @@ class HttpContext extends Macroable {
      * @returns {any}
      */
     public setCurrentNext(next: Function) {
-        this.$next = next
+        this.#next = next;
     }
 
     /**
@@ -63,8 +66,10 @@ class HttpContext extends Macroable {
      * next method.
      * @returns {any}
      */
-    public next() {
-        this.$next(...arguments)
+    public next(...args: any[]) {
+        if (this.#next) {
+            return this.#next(...args);
+        }
     }
 
 }

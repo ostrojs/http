@@ -11,12 +11,13 @@ import utils, {
 } from './utils';
 
 
-import { extname, resolve } from 'path';
+import { extname, resolve } from 'node:path';
 import statuses from 'statuses';
 import send from 'send';
 const mime = send.mime;
 import vary from 'vary';
 import etag from 'etag';
+import type { ServerResponse, OutgoingMessage } from 'node:http';
 var charsetRegExp = /;\s*charset\s*=/;
 const kResponse = Symbol('response');
 import { Macroable } from '@ostro/support/macro';
@@ -41,10 +42,63 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) implements IHt
 
     /**
      * response method.
-     * @returns {any}
+     * @returns {ServerResponse | OutgoingMessage}
      */
-    public response() {
+    public response(): ServerResponse | OutgoingMessage {
         return this[kResponse]
+    }
+
+    /**
+     * Underlying native HTTP response.
+     */
+    public get res(): ServerResponse | OutgoingMessage {
+        return this[kResponse];
+    }
+
+    /**
+     * Whether HTTP response headers were sent.
+     */
+    public get headersSent(): boolean {
+        return Boolean(this[kResponse]?.headersSent);
+    }
+
+    /**
+     * Get response header.
+     *
+     * @param field - Header field name
+     */
+    public getHeader(field: string): number | string | string[] | undefined {
+        return this[kResponse]?.getHeader?.(field);
+    }
+
+    /**
+     * Set response header.
+     *
+     * @param field - Header field name
+     * @param val - Header value
+     */
+    public setHeader(field: string, val: number | string | readonly string[]): this {
+        this[kResponse]?.setHeader?.(field, val);
+        return this;
+    }
+
+    /**
+     * Check if response header exists.
+     *
+     * @param field - Header field name
+     */
+    public hasHeader(field: string): boolean {
+        return Boolean(this[kResponse]?.hasHeader?.(field));
+    }
+
+    /**
+     * Remove response header.
+     *
+     * @param field - Header field name
+     */
+    public removeHeader(field: string): this {
+        this[kResponse]?.removeHeader?.(field);
+        return this;
     }
 
     /**
@@ -66,15 +120,21 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) implements IHt
      * @param {*} status
      * @returns {any}
      */
-    public send(body: any, status: number = 200) {
+    public send(body: any, status?: number) {
         var chunk = body;
         var encoding;
         var type;
 
+        if (status !== undefined) {
+            this.statusCode = status;
+        } else if (!this.statusCode) {
+            this.statusCode = 200;
+        }
+
         if (arguments.length === 2) {
             if (typeof arguments[0] !== 'number' && typeof arguments[1] === 'number') {
                 this.statusCode = arguments[1];
-            } else {
+            } else if (typeof arguments[0] === 'number') {
                 this.statusCode = arguments[0];
                 chunk = arguments[1];
             }
@@ -155,21 +215,36 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) implements IHt
     }
 
     /**
+     * Set the HTTP status code for the response.
+     *
+     * @param code - HTTP status code.
+     * @returns This response instance.
+     */
+    public status(code: number): this {
+        this.statusCode = code;
+        return this;
+    }
+
+    /**
      * json method.
      * @param {*} obj
      * @param {*} status
      * @returns {any}
      */
-    public json(obj: any, status: number = 200) {
+    public json(obj: any, status?: number) {
         var val = obj;
-        this.statusCode = status
+        if (status !== undefined) {
+            this.statusCode = status;
+        } else if (!this.statusCode) {
+            this.statusCode = 200;
+        }
 
         var body = stringify(val)
         if (!this.header('Content-Type')) {
             this.header('Content-Type', 'application/json');
         }
 
-        return this.send(body, status);
+        return status !== undefined ? this.send(body, status) : this.send(body);
     }
 
     /**
@@ -457,9 +532,10 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) implements IHt
             return this
         }
         var address = url;
-        var body;
+        var body = '';
         var status = 302;
-        address = this.location(address).get('Location');
+        this.location(address);
+        address = String(this.getHeader('Location') || address);
         this.format({
             text: function () {
                 body = statuses[status] + '. Redirecting to ' + address
@@ -901,8 +977,8 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) implements IHt
      * @param {*} key
      * @returns {any}
      */
-    public __get(target: Record<string, any>, key: string) {
-        return (this as any).make((target as any)[kResponse], key)
+    public __get(target: HttpResponse, key: string) {
+        return this.make(target[kResponse], key);
     }
     /**
      * __set method.
@@ -912,11 +988,11 @@ class HttpResponse extends Macroable.extend(HttpResponseContract) implements IHt
      * @returns {any}
      */
     public __set(target: Record<string, any>, key: string, value: any) {
-        const resp = (target as any)[kResponse];
-        if (resp && key in resp) {
-            return resp[key] = value
+        const resp = (target as this)[kResponse];
+        if (resp && typeof resp === 'object' && key in resp) {
+            return resp[key] = value;
         } else {
-            return target[key] = value
+            return target[key] = value;
         }
     }
 
