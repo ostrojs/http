@@ -2,8 +2,6 @@ import File from '../file';
 import lodash from 'lodash';
 import qs from 'qs';
 import Busboy from 'busboy';
-import path from 'path';
-
 /**
  * Customizer handler for lodash.mergeWith.
  *

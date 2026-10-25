@@ -1,5 +1,5 @@
 import RedirectResponse from './redirectResponse';
-import { Macroable } from '@ostro/support/macro';
+import { Macroable, ProxyHandler } from '@ostro/support/macro';
 /**
  * Class Redirect.
  */
@@ -12,7 +12,7 @@ class Redirect {
      * @returns {any}
      */
     static __get(target: Record<string, any>, method: string) {
-        return (this as any).make(new RedirectResponse(undefined), method);
+        return ProxyHandler.make(new RedirectResponse(undefined), method);
     }
 }
 export default Macroable(Redirect);

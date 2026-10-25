@@ -1,3 +1,4 @@
+import { describe, test, it, expect, jest } from "@jest/globals";
 const _BodyParserJson = require('../src/middleware/bodyParserJson');
 const BodyParserJson = _BodyParserJson.default || _BodyParserJson;
 const _BodyParserUrlEncoded = require('../src/middleware/bodyParserUrlEncoded');
@@ -12,9 +13,9 @@ const _QueryParser = require('../src/middleware/queryParser');
 const QueryParser = _QueryParser.default || _QueryParser;
 const _ServeStatic = require('../src/middleware/serveStatic');
 const ServeStatic = _ServeStatic.default || _ServeStatic;
-const { Readable } = require('stream');
-const EventEmitter = require('events');
-const zlib = require('zlib');
+const { Readable } = require('node:stream');
+const EventEmitter = require('node:events');
+const zlib = require('node:zlib');
 
 describe('HTTP Middlewares', () => {
     describe('BodyParserJson', () => {

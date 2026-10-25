@@ -1,5 +1,4 @@
 import proxyaddr from 'proxy-addr';
-import { Buffer } from 'safe-buffer';
 import contentType from 'content-type';
 import { mime } from 'send';
 import onFinished from 'on-finished';

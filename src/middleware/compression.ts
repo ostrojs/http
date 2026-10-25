@@ -3,15 +3,13 @@ import bytes from 'bytes';
 import compressible from 'compressible';
 import onHeaders from 'on-headers';
 import vary from 'vary';
-import zlib from 'zlib';
-
-const kOptions: unique symbol = Symbol('options');
+import zlib from 'node:zlib';
 
 /**
  * Class Compression.
  */
 class Compression {
-    [kOptions]: Record<string, any>;
+    #options: Record<string, any>;
 
     public $defaultOptions: Record<string, any> = { threshold: 1024 };
     declare $options?: Record<string, any>;
@@ -22,7 +20,7 @@ class Compression {
      * Create a new instance.
      */
     constructor() {
-        this[kOptions] = {
+        this.#options = {
             ...(this.$defaultOptions),
             ...(this.$options || {})
         };
@@ -38,7 +36,7 @@ class Compression {
             return next();
         }
         let self = this;
-        var threshold = bytes.parse(this[kOptions]['threshold']);
+        var threshold = bytes.parse(this.#options['threshold']);
 
         var ended = false;
         var length: any;
@@ -166,8 +164,8 @@ class Compression {
             }
 
             stream = method === 'gzip' ?
-                zlib.createGzip(self[kOptions]) :
-                zlib.createDeflate(self[kOptions]);
+                zlib.createGzip(self.#options) :
+                zlib.createDeflate(self.#options);
 
             self.addListeners(stream, stream.on, listeners);
 

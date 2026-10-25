@@ -1,9 +1,10 @@
+import { describe, test, expect, jest } from "@jest/globals";
 const _HttpResponse = require('../src/response');
 const HttpResponse = _HttpResponse.default || _HttpResponse;
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
-const { PassThrough } = require('stream');
+const http = require('node:http');
+const path = require('node:path');
+const fs = require('node:fs');
+const { PassThrough } = require('node:stream');
 
 describe('HttpResponse', () => {
     function createMockRawRes(reqOverrides = {}) {
